@@ -145,5 +145,5 @@ while True:
 
     pygame.display.update()
     disp.image(image)
-    time.sleep(5)
+    time.sleep(3)
 
