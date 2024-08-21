@@ -68,17 +68,14 @@ MAXTEMP = 32.0 # high range of the sensor (this will be red on the screen)
 COLORDEPTH = 1024
 
 #os.putenv("SDL_FBDEV", "/dev/fb1")
-# pylint: disable=no-member
 pygame.init()
-# pylint: enable=no-member
 
 # initialize the sensor
 sensor = adafruit_amg88xx.AMG88XX(i2c_bus)
 
-# pylint: disable=invalid-slice-index
+# initial stuff for bicubic
 points = [(math.floor(ix / 8), (ix % 8)) for ix in range(0, 64)]
 grid_x, grid_y = np.mgrid[0:7:32j, 0:7:32j]
-# pylint: enable=invalid-slice-index
 
 # sensor is an 8x8 grid so lets do a square
 height = 240
@@ -123,10 +120,15 @@ while True:
     for row in sensor.pixels:    # gets rid of rows and makes a single list of pixel values
         pixels = pixels + row
     pixels = [map_value(p, MINTEMP, MAXTEMP, 0, COLORDEPTH - 1) for p in pixels]
+    print("Mapped pixels")
+    print("Size of pixels list = ", len(pixels))
     print(pixels)
     # perform interpolation
     bicubic = griddata(points, pixels, (grid_x, grid_y), method="cubic")
-
+    print("Interpolated")
+    print("shape = ", bicubic.shape)
+    with np.printoptions(threshold=np.inf):
+        print(bicubic)
     # draw everything
     for ix, row in enumerate(bicubic):
         for jx, pixel in enumerate(row):
@@ -143,4 +145,5 @@ while True:
 
     pygame.display.update()
     disp.image(image)
+    time.sleep(5)
 
