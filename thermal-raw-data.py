@@ -84,32 +84,26 @@ width = 240
 # the list of colors we can choose from
 blue = Color("indigo")
 colors = list(blue.range_to(Color("red"), COLORDEPTH))
+print("Colors list = ", colors)
 
 # create the array of colors
 colors = [(int(c.red * 255), int(c.green * 255), int(c.blue * 255)) for c in colors]
+print("Colors array length = ", len(colors))
+print("colors array = ", colors)
 
 displayPixelWidth = width / 30
 displayPixelHeight = height / 30
 
 lcd = pygame.display.set_mode((width, height))
-'''
-lcd.fill((255, 0, 0))
-
-pygame.display.update()
-pygame.mouse.set_visible(False)
-'''
 lcd.fill((0, 0, 0))
 pygame.display.update()
-
 
 # some utility functions
 def constrain(val, min_val, max_val):
     return min(max_val, max(min_val, val))
 
-
 def map_value(x, in_min, in_max, out_min, out_max):
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
-
 
 # let the sensor initialize
 time.sleep(0.1)
@@ -142,8 +136,11 @@ while True:
                     displayPixelWidth,
                 ),
             )
-
+            print(constrain(int(pixel), 0, COLORDEPTH -1))
+            print(colors[constrain(int(pixel), 0, COLORDEPTH -1)])
+            #time.sleep(1)
+         
     pygame.display.update()
     disp.image(image)
-    time.sleep(3)
+    #time.sleep(3)
 
