@@ -50,6 +50,12 @@ colors = list(red.range_to(Color("indigo"), COLORDEPTH))
 MINTEMP = 26.0  # low range, blue on screen 
 MAXTEMP = 36.0  # high range, red on screen
 
+# set up temperature scale
+scale = np.linspace(MINTEMP, MAXTEMP, 3)
+print(scale)
+for t in scale:
+    print(t)
+
 # create array of colors
 colors = [(int(c.red * 255), int(c.green * 255), int(c.blue * 255)) for c in colors]
 
