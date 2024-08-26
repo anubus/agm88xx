@@ -56,6 +56,10 @@ print(scale)
 for t in scale:
     print(t)
 
+# load fonts for use in scale display
+FONTSIZE = 12
+font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", FONTSIZE)
+
 # create array of colors
 colors = [(int(c.red * 255), int(c.green * 255), int(c.blue * 255)) for c in colors]
 
@@ -106,5 +110,15 @@ while True:
                     ),
                     fill = colors[constrain(int(pixel), 0, COLORDEPTH -1)]
             )
+    # display scale
+    text = str(MAXTEMP)
+    (font_x, font_y, font_width, font_height) = font.getbbox(text)
+    draw.text(
+            (width - font_width, height //2  - font_height),
+            text,
+            font = font,
+            fill = (255, 255, 255),
+    )
+
     disp.image(image)
 

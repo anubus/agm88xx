@@ -98,13 +98,16 @@ draw.rectangle(
 font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", FONTSIZE)
 
 # Draw Some Text
-text = "Hello World!"
+MAXTEMP = 36.0
+#text = "Hello World!"
+text = str(MAXTEMP)
 (font_x, font_y, font_width, font_height) = font.getbbox(text)
 draw.text(
-    (width // 2 - font_width // 2, height // 2 - font_height // 2),
+    #(width // 2 - font_width // 2, height // 2 - font_height // 2),
+    (width - font_width, height - font_height),
     text,
     font=font,
-    fill=(255, 255, 0),
+    fill=(255, 255, 255),
 )
 
 # Display image.
