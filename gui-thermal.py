@@ -47,17 +47,23 @@ red = Color("red")
 colors = list(red.range_to(Color("indigo"), COLORDEPTH))
 
 # set temperature range
-MINTEMP = 26.0  # low range, blue on screen 
-MAXTEMP = 36.0  # high range, red on screen
+MINTEMP = 25.0  # low range, blue on screen (sensor min = 0c)
+MAXTEMP = 30.0  # high range, red on screen (sensor max = 80c)
 
 # set up temperature scale
-scale = np.linspace(MINTEMP, MAXTEMP, 3)
-print(scale)
+LEGENDBORDER = 129
+SCALESTEP = 10
+scale = np.linspace(MINTEMP, MAXTEMP, SCALESTEP)
+colorScale = np.linspace(0, COLORDEPTH - 1, SCALESTEP)
+print(scale, colorScale)
 for t in scale:
-    print(t)
+    print(round(t, 1))
+for c in colorScale:
+    print(int(c))
+    print(colors[int(c)])
 
 # load fonts for use in scale display
-FONTSIZE = 12
+FONTSIZE = 10
 font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", FONTSIZE)
 
 # create array of colors
@@ -65,9 +71,10 @@ colors = [(int(c.red * 255), int(c.green * 255), int(c.blue * 255)) for c in col
 
 # Create blank image for drawing.
 # Make sure to create image with mode 'RGB' for full color.
-height = disp.height  # 160
-width = disp.width  # 128
-image = Image.new("RGB", (height, width))
+# this display is landscape oriented so swap height/width
+height = disp.width  # 160
+width = disp.height  # 128
+image = Image.new("RGB", (width, height))
 
 print(" Display width: ", width)
 print("         height: ", height)
@@ -88,6 +95,30 @@ draw = ImageDraw.Draw(image)
 # inialize bicubic stuff
 points = [(math.floor(ix / 8), (ix % 8)) for ix in range(0, 64)]
 grid_x, grid_y = np.mgrid[0:7:32j, 0:7:32j]
+
+#display color legend scale stripe
+for kx, legendColor in enumerate(colorScale):
+    draw.rectangle(
+            (
+                LEGENDBORDER, 
+                height - kx * height // SCALESTEP - height // SCALESTEP,
+                width,
+                height - kx * height // SCALESTEP + height // SCALESTEP - height // SCALESTEP
+            ),
+            fill = colors[int(legendColor)]
+    )
+
+# display scale numbers
+text = str(round(MAXTEMP, 1))
+for lx, temp in enumerate(scale):
+    text = str(round(temp, 1))
+    (font_x, font_y, font_width, font_height) = font.getbbox(text)
+    draw.text(
+        (width - font_width, height - lx * height // font_height - height // font_height),
+        text,
+        font = font,
+        fill = (255, 255, 255),
+    )
 
 # Draw a box with rotating colors blue to red
 while True:
@@ -110,15 +141,5 @@ while True:
                     ),
                     fill = colors[constrain(int(pixel), 0, COLORDEPTH -1)]
             )
-    # display scale
-    text = str(MAXTEMP)
-    (font_x, font_y, font_width, font_height) = font.getbbox(text)
-    draw.text(
-            (width - font_width, height //2  - font_height),
-            text,
-            font = font,
-            fill = (255, 255, 255),
-    )
-
     disp.image(image)
 
