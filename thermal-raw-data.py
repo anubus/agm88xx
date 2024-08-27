@@ -113,16 +113,21 @@ while True:
     pixels = []
     for row in sensor.pixels:    # gets rid of rows and makes a single list of pixel values
         pixels = pixels + row
-    pixels = [map_value(p, MINTEMP, MAXTEMP, 0, COLORDEPTH - 1) for p in pixels]
-    print("Mapped pixels")
-    print("Size of pixels list = ", len(pixels))
+        #print("Row: ", row)
+        #print(pixels)
+    print("size of pixel list: ", len(pixels))
+    print("Center pixel: ", pixels[31])
     print(pixels)
+    pixels = [map_value(p, MINTEMP, MAXTEMP, 0, COLORDEPTH - 1) for p in pixels]
+    #print("Mapped pixels")
+    #print("Size of pixels list = ", len(pixels))
+    #print(pixels)
     # perform interpolation
     bicubic = griddata(points, pixels, (grid_x, grid_y), method="cubic")
-    print("Interpolated")
-    print("shape = ", bicubic.shape)
-    with np.printoptions(threshold=np.inf):
-        print(bicubic)
+    #print("Interpolated")
+    #print("shape = ", bicubic.shape)
+    #with np.printoptions(threshold=np.inf):
+        #print(bicubic)
     # draw everything
     for ix, row in enumerate(bicubic):
         for jx, pixel in enumerate(row):
@@ -136,8 +141,8 @@ while True:
                     displayPixelWidth,
                 ),
             )
-            print(constrain(int(pixel), 0, COLORDEPTH -1))
-            print(colors[constrain(int(pixel), 0, COLORDEPTH -1)])
+            #print(constrain(int(pixel), 0, COLORDEPTH -1))
+            #print(colors[constrain(int(pixel), 0, COLORDEPTH -1)])
             #time.sleep(1)
          
     pygame.display.update()
