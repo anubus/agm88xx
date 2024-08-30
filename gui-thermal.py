@@ -19,12 +19,43 @@ cs_pin = digitalio.DigitalInOut(board.CE0)
 dc_pin = digitalio.DigitalInOut(board.D25)
 reset_pin = digitalio.DigitalInOut(board.D24)
 
+# Configure i/o buttons and service LED pins
+led = digitalio.DigitalInOut(board.D21)
+led.direction = digitalio.Direction.OUTPUT
+buttonLL = digitalio.DigitalInOut(board.D26)
+buttonUL = digitalio.DigitalInOut(board.D19)
+buttonLR = digitalio.DigitalInOut(board.D13)
+buttonUR = digitalio.DigitalInOut(board.D6)
+buttonLL.direction = digitalio.Direction.INPUT
+buttonUL.direction = digitalio.Direction.INPUT
+buttonLR.direction = digitalio.Direction.INPUT
+buttonUR.direction = digitalio.Direction.INPUT
+buttonLL.pull = digitalio.Pull.UP
+buttonUL.pull = digitalio.Pull.UP
+buttonLR.pull = digitalio.Pull.UP
+buttonUR.pull = digitalio.Pull.UP
+
 # Config for display baudrate (default max is 24mhz):
 BAUDRATE = 24000000
 
-# Setup SPI bus using hardware SPI:
+# Scale display parameters
+LEGENDBORDER = 129 # x position for scale
+SCALESTEP = 10     # how many numbers to show on scale
+FONTSIZE = 10      # of the scale display
+TEMPINCREMENT = 1  # home much each button press moves the temperature scale
+SENSORMAX = 80     # maximum temperature sensor can measure in celsius
+SENSORMIN = 0      # minimum temp sensor can measure in celsium
+
+# load fonts for use in scale display
+font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", FONTSIZE)
+
+# set initial temperature range
+minTemp = 26.0  # low range, blue on screen (sensor min = 0c)
+maxTemp = 40.0  # high range, red on screen (sensor max = 80c)
+
+# Setup 1.8" ST7735R display SPI bus using hardware SPI:
 spi = board.SPI()
-disp = st7735.ST7735R(spi, rotation=90,                           # 1.8" ST7735R
+disp = st7735.ST7735R(spi, rotation=90, 
     cs=cs_pin,
     dc=dc_pin,
     rst=reset_pin,
@@ -46,20 +77,6 @@ red = Color("red")
 #colors = list(blue.range_to(Color("red"), COLORDEPTH))
 colors = list(red.range_to(Color("indigo"), COLORDEPTH))
 
-# set temperature range
-minTemp = 26.0  # low range, blue on screen (sensor min = 0c)
-maxTemp = 40.0  # high range, red on screen (sensor max = 80c)
-
-# set up temperature scale
-LEGENDBORDER = 129
-SCALESTEP = 10
-scale = np.linspace(minTemp, maxTemp, SCALESTEP)
-colorScale = np.linspace(0, COLORDEPTH - 1, SCALESTEP)
-
-# load fonts for use in scale display
-FONTSIZE = 10
-font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", FONTSIZE)
-
 # create array of colors
 colors = [(int(c.red * 255), int(c.green * 255), int(c.blue * 255)) for c in colors]
 
@@ -74,7 +91,7 @@ image = Image.new("RGB", (width, height))
 # sensor is 8 x 8 interpolated to 32 x 32
 displayPixel =  4   # 4 x 32 = 128
 
-# utility functions
+# some utility functions
 def constrain(val, min_val, max_val):
     return min(max_val, max(min_val, val))
 
@@ -84,6 +101,12 @@ def map_value(x, in_min, in_max, out_min, out_max):
 def toF(celsius):     #convert celsius to fahrenheit
     return(celsius * 1.8) + 32
 
+def blink():        #blink the LED briefly
+    led.value = True
+    time.sleep(0.3)
+    led.value = False
+    return
+
 # Get drawing object to draw on image.
 draw = ImageDraw.Draw(image)
 
@@ -91,38 +114,66 @@ draw = ImageDraw.Draw(image)
 points = [(math.floor(ix / 8), (ix % 8)) for ix in range(0, 64)]
 grid_x, grid_y = np.mgrid[0:7:32j, 0:7:32j]
 
-#display color legend scale stripe
-for kx, legendColor in enumerate(colorScale):
-    draw.rectangle(
-            (
-                LEGENDBORDER, 
-                height - kx * height // SCALESTEP - height // SCALESTEP,
-                width,
-                height - kx * height // SCALESTEP + height // SCALESTEP - height // SCALESTEP
-            ),
-            fill = colors[int(legendColor)]
-    )
-
-# display scale numbers
-for lx, temp in enumerate(scale):
-    if fahrenheit:
-        temp = toF(temp)
-    text = str(round(temp, 1))
-    (font_x, font_y, font_width, font_height) = font.getbbox(text)
-    draw.text(
-        (width - font_width, height - lx * height // font_height - height // font_height),
-        text,
-        font = font,
-        fill = (255, 255, 255),
-    )
+# set up temperature color scale
+colorScale = np.linspace(0, COLORDEPTH - 1, SCALESTEP)
 
 # parameters for aiming circle at center of display
 center = height // 2
 circleSize = 5
 offset = height // 8  # put aiming circle over sensor pixel closest to center (pixel 35)
 
+def tempScale():     #draw temperature scale on right side of screen
+    for kx, legendColor in enumerate(colorScale):
+        draw.rectangle(
+                (
+                    LEGENDBORDER, 
+                    height - kx * height // SCALESTEP - height // SCALESTEP,
+                    width,
+                    height - kx * height // SCALESTEP + height // SCALESTEP - height // SCALESTEP
+                ),
+                fill = colors[int(legendColor)]
+        )
+    # display scale numbers
+    scale = np.linspace(minTemp, maxTemp, SCALESTEP)
+    for lx, temp in enumerate(scale):
+        if fahrenheit:
+            temp = toF(temp)
+        text = str(round(temp, 1))
+        (font_x, font_y, font_width, font_height) = font.getbbox(text)
+        draw.text(
+            (width - font_width, height - lx * height // font_height - height // font_height),
+            text,
+            font = font,
+            fill = (255, 255, 255),
+        )
+
+# display the initial scale
+tempScale()
+
 # draw and update the displqy 
 while True:
+    # modify upper and lower color scale from button presses
+    if buttonLL.value == False:
+        blink()
+        minTemp = minTemp - TEMPINCREMENT 
+        if minTemp < SENSORMIN: minTemp = SENSORMIN
+        tempScale()
+    if buttonUL.value == False:
+        blink()
+        minTemp = minTemp + TEMPINCREMENT 
+        if minTemp >= maxTemp: minTemp = maxTemp - 1
+        tempScale()
+    if buttonLR.value == False:
+        blink()
+        maxTemp = maxTemp - TEMPINCREMENT 
+        if maxTemp <= minTemp: maxTemp = minTemp +1
+        tempScale()
+    if buttonUR.value == False:
+        blink()
+        maxTemp = maxTemp + TEMPINCREMENT 
+        if maxTemp > SENSORMAX: maxTemp = SENSORMAX
+        tempScale()
+    
     # read the sensor pixels
     pixels = []
     for row in sensor.pixels:    # gets rid of rows and makes a single list of pixel values

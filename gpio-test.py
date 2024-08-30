@@ -21,9 +21,8 @@ buttonUR.pull = digitalio.Pull.UP
 
 def blink():
     led.value = True
-    time.sleep(0.2)
+    time.sleep(0.3)
     led.value = False
-    return
 
 print("Button test")
 
